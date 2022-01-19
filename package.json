@@ -1,0 +1,57 @@
+{
+  "name": "nest-babel-starter",
+  "version": "1.0.0",
+  "description": "Nest Babel starter repository",
+  "license": "MIT",
+  "scripts": {
+    "format": "prettier --write \"**/*.js\"",
+    "start": "babel-node index.js",
+    "start:dev": "nodemon",
+    "dev": "nodemon",
+    "testnet": "NETWORK=testnet nodemon"
+  },
+  "dependencies": {
+    "@nestjs/common": "^8.2.4",
+    "@nestjs/config": "^1.1.5",
+    "@nestjs/core": "^8.2.4",
+    "@nestjs/jwt": "^8.0.0",
+    "@nestjs/passport": "^8.0.1",
+    "@nestjs/platform-express": "^8.2.3",
+    "jsonwebtoken": "^8.5.1",
+    "knex": "^0.95.15",
+    "node-schedule": "^2.1.0",
+    "passport": "^0.5.2",
+    "passport-jwt": "^4.0.0",
+    "pg": "^8.7.1",
+    "ramda": "^0.27.1",
+    "reflect-metadata": "^0.1.13",
+    "rxjs": "^7.4.0",
+    "simple-statistics": "^7.7.0",
+    "socket.io": "^4.4.0",
+    "technicalindicators": "^3.1.0",
+    "ws": "^8.3.0"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.16.5",
+    "@babel/node": "^7.16.5",
+    "@babel/plugin-proposal-decorators": "^7.16.5",
+    "@babel/plugin-transform-runtime": "^7.16.5",
+    "@babel/preset-env": "^7.16.5",
+    "@babel/register": "^7.16.5",
+    "@babel/runtime": "^7.16.5",
+    "@nestjs/testing": "^8.2.3",
+    "jest": "^27.4.5",
+    "nodemon": "^2.0.15",
+    "prettier": "^2.5.1",
+    "supertest": "^4.0.2"
+  },
+  "jest": {
+    "moduleFileExtensions": [
+      "js",
+      "json"
+    ],
+    "rootDir": "src",
+    "testRegex": ".spec.js$",
+    "coverageDirectory": "../coverage"
+  }
+}
