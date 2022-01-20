@@ -41,12 +41,12 @@ class TradingPair {
     }
     // console.log(this.strategy.min, this.strategy.max);
 
-    // console.log(
-    //   this.lastOrderTime,
-    //   market.lastTicker,
-    //   this.strategy.min,
-    //   this.strategy.max,
-    // );
+    console.log(
+      this.lastOrderTime,
+      market.lastTicker,
+      this.strategy.min,
+      this.strategy.max,
+    );
 
     if (!this.isRunning) {
       await this.start();
