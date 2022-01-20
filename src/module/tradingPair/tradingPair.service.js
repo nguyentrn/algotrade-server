@@ -50,7 +50,7 @@ export class TradingPairService {
                 'extract(epoch from time) AS time,open,high,low,close,volume',
               ),
             )
-            .where('time', '<', new Date(lastTime))
+            .where('time', '<', lastTime ? new Date(lastTime) : new Date())
             .orderBy('time', 'desc')
             .limit(1440),
         )

@@ -7,10 +7,8 @@ class Strategy {
     this.symbol = tradingPair.symbol;
     this.type = tradingPair.type;
     this.initialAmount = tradingPair.initialAmount;
-    this.takeProfit = 1;
-    this.stopLoss = -7;
-    // this.takeProfit = tradingPair.takeProfit;
-    // this.stopLoss = tradingPair.stopLoss;
+    this.takeProfit = tradingPair.takeProfit;
+    this.stopLoss = tradingPair.stopLoss;
     this.advanceSettings = tradingPair.advanceSettings;
     this.entryPoints = tradingPair.entryPoints;
     this.dcaPosition = -1;
@@ -68,6 +66,8 @@ class Strategy {
   }
 
   checkStop(tradingPair, from) {
+    // console.log(this.min, this.max, this.profit, tradingPair.lastTicker);
+
     if (this.checkStopLoss()) {
       delete this.min;
       return true;
@@ -79,7 +79,6 @@ class Strategy {
           if (this.max < lastTicker) {
             this.max = lastTicker;
           }
-          // const max = tradingPair.max(from);
           if (
             this.max !== lastTicker &&
             ((lastTicker - this.max) / this.max) * 100 >=

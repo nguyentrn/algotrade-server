@@ -43,16 +43,15 @@ class TradingPair {
 
     // console.log(
     //   this.lastOrderTime,
-    //   market.getPriceFrom(this.lastOrderTime) &&
-    //     market.getPriceFrom(this.lastOrderTime).length,
     //   market.lastTicker,
     //   this.strategy.min,
-    //   ((market.lastTicker - this.strategy.min) / this.strategy.min) * 100,
+    //   this.strategy.max,
     // );
 
     if (!this.isRunning) {
       await this.start();
     } else {
+      // console.log(this.strategy.profit);
       this.strategy.setProfit(market);
       await this.dca();
       // console.log(this.strategy.profit);
