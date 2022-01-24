@@ -1,48 +1,37 @@
+import schedule from 'node-schedule';
+import { groupBy } from 'ramda';
+
 import { _USERS_DATA } from './Users';
-import { _MARKET_DATA } from './Market';
-import db from '../database';
-import { max, min } from 'simple-statistics';
-import sleep from '../utils/sleep';
+import { _MARKET_DATA } from './Market/Market';
+import './Socket';
+import pairs from '../apis/pairs';
+import db from '../database/index';
 
-const done = [];
-// (async () => {
-//   const dumpData = await db
-//     .with(
-//       'prices',
-//       db
-//         .withSchema('ohlcvs')
-//         .from('binance_btcusdt_1m')
-//         .select(db.raw(`'BTCUSDT' AS s, time AS "E", close AS c`))
-//         .orderBy('time', 'desc')
-//         .where('time', '<', '2021/12/04')
-//         .limit(1440),
-//     )
-//     .select('*')
-//     .orderBy('E')
-//     .from('prices');
-//   for (let i = 0; i < dumpData.length; i++) {
-//     if (_MARKET_DATA.isLoaded && dumpData) {
-//       dumpData[i].E = new Date(dumpData[i].E).getTime();
-//       _MARKET_DATA.setTicker(dumpData[i]);
-//       const users = Object.values(_USERS_DATA);
-//       for (let j = 0; j < users.length; j++) {
-//         const { tradingPairs } = users[j];
-//         for (let k = 0; k < tradingPairs.length; k++) {
-//           const tradingPair = tradingPairs[k];
-//           await tradingPair.run();
-//           if (tradingPair.profit !== done[done.length - 1]) {
-//             done.push(tradingPair.profit);
-//           }
-//         }
-//       }
-//     }
-//   }
-//   done.map((s) => console.log(s));
+const bySymbol = groupBy((ohlcv) => ohlcv.s);
+const getOHLCVs = async (limit = 1, condition = '') => {
+  const query = `${pairs
+    .slice(0, 2)
+    .map(
+      (pair) =>
+        `(SELECT '${pair}' AS s,open,high,low,close,volume,time FROM ohlcvs.binance_${pair.toLowerCase()}_1m ${condition} ORDER BY time DESC LIMIT ${limit})`,
+    )
+    .join(' UNION ')} ORDER BY time`;
+  const ohlcvs = await db.raw(query);
+  return Object.entries(bySymbol(ohlcvs.rows));
+};
 
-//   const first = dumpData[0].c;
-//   const last = dumpData[dumpData.length - 1].c;
-//   console.log(first, last, ((last - first) / first) * (60 + 30 + 15));
-// })();
+(async () => {
+  await _MARKET_DATA.init();
+  const ohlcvs = await getOHLCVs(50);
+  _MARKET_DATA.initOHLCVs(ohlcvs);
+})();
+
+schedule.scheduleJob('3 * * * * *', async () => {
+  const ohlcvs = await getOHLCVs(10);
+  if (_MARKET_DATA.isLoaded) {
+    _MARKET_DATA.updateOHLCVs(ohlcvs);
+  }
+});
 
 setInterval(async () => {
   if (_MARKET_DATA.isLoaded) {
@@ -50,7 +39,19 @@ setInterval(async () => {
       Object.values(_USERS_DATA).map(async (user) => {
         await Promise.all(
           user.tradingPairs.map(async (tradingPair) => {
-            await tradingPair.run();
+            const order = tradingPair.run(_MARKET_DATA[tradingPair.symbol]);
+            if (order) {
+              await user.order(_MARKET_DATA[tradingPair.symbol], order);
+              if (order.side === 'SELL') {
+                const fee = tradingPair.getFee();
+                if (fee > 0) {
+                  await user.chargeFee(fee);
+                }
+              }
+            }
+            // if (tradingPair.profit !== done[done.length - 1]) {
+            //   done.push(tradingPair.profit);
+            // }
           }),
         );
       }),

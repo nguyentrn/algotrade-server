@@ -19,6 +19,15 @@ export class AccountController {
   }
 
   @UseGuards(JwtAuthGuard)
+  @Get('checkapi')
+  @Bind(Request())
+  async checkApiKey(req) {
+    const email = decodeToken(req).email;
+    const apiKey = await this.accountService.checkApiKey(email);
+    return { status: 200, data: apiKey };
+  }
+
+  @UseGuards(JwtAuthGuard)
   @Get('balances')
   @Bind(Request())
   async getBalances(req) {

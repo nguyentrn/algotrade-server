@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { _MARKET_DATA } from '../../bot/Market';
+import { _MARKET_DATA } from '../../bot/Market/Market';
 import { _USERS_DATA } from '../../bot/Users';
 import db from '../../database/index';
 
@@ -9,13 +9,14 @@ export class TradingPairService {
     const tradingPairsObj = {};
     Object.values(_MARKET_DATA).forEach((tradingPair) => {
       if (tradingPair.symbol) {
-        const { symbol, baseAsset, quoteAsset, id, name } = tradingPair;
+        const { symbol, baseAsset, quoteAsset, id, name, color } = tradingPair;
         tradingPairsObj[tradingPair.symbol] = {
           symbol,
           baseAsset,
           quoteAsset,
           id,
           name,
+          color,
         };
       }
     });
@@ -52,7 +53,7 @@ export class TradingPairService {
             )
             .where('time', '<', lastTime ? new Date(lastTime) : new Date())
             .orderBy('time', 'desc')
-            .limit(1440),
+            .limit(1000),
         )
         .select('*')
         .orderBy('time')

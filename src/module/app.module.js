@@ -6,6 +6,7 @@ import { AuthModule } from './auth/auth.module';
 import { TradingPairModule } from './tradingPair/tradingPair.module';
 import { AccountModule } from './account/account.module';
 import { StrategyModule } from './strategies/strategy.module';
+import { BacktestModule } from './backtest/backtest.module';
 
 @Module({
   imports: [
@@ -16,6 +17,7 @@ import { StrategyModule } from './strategies/strategy.module';
     AuthModule,
     MetaModule,
     TradingPairModule,
+    BacktestModule,
     AccountModule,
     StrategyModule,
   ],

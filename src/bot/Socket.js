@@ -1,5 +1,5 @@
 import WebSocket from 'ws';
-import { _MARKET_DATA } from './Market';
+import { _MARKET_DATA } from './Market/Market';
 import { _USERS_DATA } from './Users';
 
 let endpoint;

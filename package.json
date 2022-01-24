@@ -16,6 +16,8 @@
     "@nestjs/jwt": "^8.0.0",
     "@nestjs/passport": "^8.0.1",
     "@nestjs/platform-express": "^8.2.3",
+    "echarts": "^5.2.2",
+    "echarts-for-react": "^3.0.2",
     "jsonwebtoken": "^8.5.1",
     "knex": "^0.95.15",
     "node-schedule": "^2.1.0",

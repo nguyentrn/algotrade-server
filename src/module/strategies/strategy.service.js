@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { _MARKET_DATA } from '../../bot/Market';
+import { _MARKET_DATA } from '../../bot/Market/Market';
 import { _USERS_DATA } from '../../bot/Users';
 import db from '../../database/index';
 

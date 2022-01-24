@@ -1,83 +1,84 @@
-import db from '../database';
-import { _MARKET_DATA } from './Market';
-import Strategy from './Strategy';
+import SimpleStrategy from './Strategy/SimpleStrategy';
+
+const setStrategyByType = (tradingPair) => {
+  switch (tradingPair.strategy) {
+    case 'simple-dca': {
+      return new SimpleStrategy({
+        symbol: tradingPair.symbol,
+        entryPoints: tradingPair.entryPoints,
+        advanceSettings: tradingPair.advanceSettings,
+        takeProfit: tradingPair.takeProfit,
+        stopLoss: tradingPair.stopLoss,
+        initialAmount: tradingPair.initialAmount,
+      });
+    }
+
+    default: {
+      return null;
+    }
+  }
+};
 
 class TradingPair {
   constructor(tradingPair) {
     this.symbol = tradingPair.symbol;
-    this.user = tradingPair.user;
-    this.strategy = new Strategy({
-      symbol: tradingPair.symbol,
-      type: tradingPair.strategy,
-      entryPoints: tradingPair.entryPoints,
-      advanceSettings: tradingPair.advanceSettings,
-      takeProfit: tradingPair.takeProfit,
-      stopLoss: tradingPair.stopLoss,
-      initialAmount: tradingPair.initialAmount,
-    });
+    this.strategy = setStrategyByType(tradingPair);
     this.isDCA = tradingPair.isDCA;
     this.isRunning = false;
     this.lastOrderTime;
     this.lastOrderPrice;
-    this.exchange = tradingPair.exchange;
     this.orders = [];
     this.profit = 0;
+    this.totalProfit = 0;
   }
 
-  setLastOrder() {
-    this.lastOrderTime = Date.now();
-  }
-
-  async run() {
-    // ------------------TEST----------------------
-    if (!this.lastOrderTime) {
-      this.lastOrderTime = _MARKET_DATA[this.symbol].lastTime;
-    }
-    // ------------------TEST----------------------
-    const market = _MARKET_DATA[this.symbol];
-
+  setMin(market) {
     if (!this.strategy.min || market.lastTicker < this.strategy.min) {
       this.strategy.min = market.lastTicker;
     }
-    // console.log(this.strategy.min, this.strategy.max);
+  }
 
-    console.log(
-      this.lastOrderTime,
-      market.lastTicker,
-      this.strategy.min,
-      this.strategy.max,
-    );
+  reset() {
+    this.orders = [];
+    this.strategy.reset();
+    this.isRunning = false;
+    this.profit = undefined;
+  }
 
+  // ------------- ENTRY -------------
+  run(market) {
+    // set minimum price in a period
+    this.setMin(market);
     if (!this.isRunning) {
-      await this.start();
-    } else {
-      // console.log(this.strategy.profit);
-      this.strategy.setProfit(market);
-      await this.dca();
-      // console.log(this.strategy.profit);
-      if (this.strategy.checkStop(market, this.lastOrderTime)) {
-        await this.stop();
-      }
+      // find start entry if not running
+      return this.start(market);
+    }
+    // if running, set profit, stop or dca
+    this.strategy.setProfit(market);
+    if (this.strategy.checkStop(market)) {
+      // console.log(this.strategy);
+      return this.stop(market);
+    }
+    if (this.isDCA) {
+      return this.dca(market);
     }
   }
 
-  async start() {
-    const market = _MARKET_DATA[this.symbol];
-
-    const buyObj = this.strategy.checkEntry(market, this.lastOrderTime);
+  start(market) {
+    const buyObj = this.strategy.checkFirstEntry(market, this.lastOrderTime);
     if (buyObj) {
       this.strategy.max = market.lastTicker;
-      await this.order(buyObj);
-      // console.log('start');
       this.isRunning = true;
       this.orders.push(buyObj);
+      return buyObj;
     }
   }
 
-  async stop() {
-    const market = _MARKET_DATA[this.symbol];
+  stop(market) {
     const sellObj = {
+      symbol: this.symbol,
       side: 'SELL',
+      transactTime: Math.round(market.lastTime / 1000),
       price: market.lastTicker,
       quantity: this.orders
         .map((order) => order.quantity)
@@ -89,72 +90,28 @@ class TradingPair {
           .map((order) => order.price * order.quantity)
           .reduce((s, v) => s + v),
     );
-    await this.order(sellObj);
-    // console.log('stop', this.profit);
-    this.orders = [];
-    this.strategy.reset();
-    this.isRunning = false;
-    await this.chargeFee(this.strategy.profit);
+    this.reset();
+    return sellObj;
   }
 
-  async dca() {
-    if (this.isDCA) {
-      const market = _MARKET_DATA[this.symbol];
-      if (this.strategy.dcaPosition <= this.strategy.entryPoints.length - 1) {
-        const buyObj = this.strategy.checkDCAEntry(market);
-        if (buyObj) {
-          this.orders.push(buyObj);
-          await this.order(buyObj);
-          // console.log('dcaEntry');
-        }
+  dca(market) {
+    if (this.strategy.dcaPosition < this.strategy.entryPoints.length) {
+      const dcaObj = this.strategy.checkDCAEntry(market);
+      if (dcaObj) {
+        this.orders.push(dcaObj);
+        return dcaObj;
       }
     }
   }
 
-  async order(orderObj) {
-    const order = {
-      user: this.user,
-      symbol: this.symbol,
-      transactTime: Math.round(_MARKET_DATA[this.symbol].lastTime / 1000),
-      price: orderObj.price,
-      origQty: orderObj.quantity,
-      side: orderObj.side,
-      position: orderObj.position,
-      updatedAt: new Date(),
-    };
-    await db('orders')
-      .insert(order)
-      .onConflict(['user', 'symbol', 'transactTime'])
-      .merge();
-    // console.log(order);
-    // const order = await this.exchange.postNewOrder(orderObj);
-    // console.log(order);
-    // this.setLastOrder(order);
-    // const { symbol, price, origQty, status, side } = order;
-    // await db('orders')
-    //   .insert({
-    //     user: this.user,
-    //     symbol,
-    //     transactTime: Math.round(_MARKET_DATA[this.symbol].lastTime / 1000),
-    //     price,
-    //     origQty,
-    //     side,
-    //     position: orderObj.position,
-    //     updatedAt: new Date(),
-    //   })
-    //   .onConflict(['user', 'symbol', 'transactTime'])
-    //   .merge();
-  }
-
   setProfit(amount) {
-    this.profit += amount;
+    this.profit = amount;
+    this.totalProfit += amount;
   }
 
-  async chargeFee(profit) {
-    if (profit > 0) {
-      await db('users')
-        .where('email', this.user)
-        .decrement('fuel', profit / 100);
+  getFee() {
+    if (this.profit > 0) {
+      return this.profit * 0.1;
     }
   }
 }
