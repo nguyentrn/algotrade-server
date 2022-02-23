@@ -21,7 +21,7 @@ export class AuthController {
   @UseGuards(JwtAuthGuard)
   @Get('check')
   @Bind(Request())
-  async updateUser(req) {
+  async checkUser(req) {
     const email = decodeToken(req).email;
     const user = await this.userService.getUser(email);
     return { status: 200, data: user };

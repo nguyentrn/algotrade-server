@@ -11,17 +11,20 @@ export class UsersService {
   async insert(email) {
     const user = {
       email,
-      updatedAt: new Date(),
       role: 1,
-      createdAt: new Date(),
+      fuel: 10,
+      created_at: new Date(),
+      updated_at: new Date(),
     };
     await db('users').insert(user);
     return user;
   }
 
   async update(user) {
-    const updatedUser = { ...user, updatedAt: new Date() };
-    await db('users').update(user).where('email', user.email);
+    const updatedUser = { ...user, updated_at: new Date() };
+    await db('users')
+      .update({ updated_at: new Date() })
+      .where('email', user.email);
     return updatedUser;
   }
 

@@ -1,7 +1,9 @@
 import {
   Controller,
   Get,
+  Post,
   Bind,
+  Body,
   Request,
   Dependencies,
   UseGuards,
@@ -21,9 +23,12 @@ export class AccountController {
   @UseGuards(JwtAuthGuard)
   @Get('checkapi')
   @Bind(Request())
-  async checkApiKey(req) {
+  async checkApiPermission(req) {
     const email = decodeToken(req).email;
-    const apiKey = await this.accountService.checkApiKey(email);
+    const apiKey = await this.accountService.checkApiPermission(email);
+    if (!apiKey || apiKey.code) {
+      return { status: 501, data: false };
+    }
     return { status: 200, data: apiKey };
   }
 
@@ -33,7 +38,25 @@ export class AccountController {
   async getBalances(req) {
     const email = decodeToken(req).email;
     const balances = await this.accountService.getBalances(email);
+    if (!balances || balances.code) {
+      return { status: 501, data: false };
+    }
     return { status: 200, data: balances };
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('updatetoken')
+  @Bind(Request(), Body())
+  async updateToken(req, body) {
+    const email = decodeToken(req).email;
+    const result = await this.accountService.updateToken({
+      user: email,
+      ...body,
+    });
+    if (result) {
+      return { status: 200, data: true };
+    }
+    return { status: 501, data: false };
   }
 
   @UseGuards(JwtAuthGuard)

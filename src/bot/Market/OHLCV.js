@@ -54,8 +54,6 @@ class OHLCV {
         Object.entries(ohlcv).map(([key, val]) => {
           this['1m'][key].push(val);
           if (this['1m'][key].length >= this.ohlcvLength) {
-            // console.log(this.ohlcvLength, this['1m'][key].length);
-
             this['1m'][key].shift();
           }
         });

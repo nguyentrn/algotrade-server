@@ -1,6 +1,6 @@
 import Strategy from './Strategy';
 
-class SimpleStrategy extends Strategy {
+class SimpleDCA extends Strategy {
   constructor(props) {
     super(props);
   }
@@ -8,10 +8,15 @@ class SimpleStrategy extends Strategy {
   checkFirstEntry(tradingPair) {
     this.lastOrderPrice = tradingPair.lastTicker;
 
-    // console.log(this.min, tradingPair.ohlcv.min());
+    // console.log(
+    //   this.min,
+    //   tradingPair.ohlcv['1m'].close,
+    //   tradingPair.ohlcv.min(this.advanceSettings.initPeriod),
+    // );
     // console.log(
     //   new Date(tradingPair.lastTime),
     //   this.min,
+    //   tradingPair.ohlcv.min(this.advanceSettings.initPeriod),
     //   this.lastOrderPrice,
     //   this.min !== this.lastOrderPrice,
     //   ((tradingPair.lastTicker - this.min) / this.min) * 100,
@@ -19,7 +24,7 @@ class SimpleStrategy extends Strategy {
     // );
     // console.log(tradingPair.ohlcv.getCandlePattern());
     if (
-      this.min <= tradingPair.ohlcv.min(this.advanceSettings.period) &&
+      this.min <= tradingPair.ohlcv.min(this.advanceSettings.initPeriod) &&
       this.min !== this.lastOrderPrice &&
       ((tradingPair.lastTicker - this.min) / this.min) * 100 >=
         this.advanceSettings.callbackForMarginCall
@@ -42,16 +47,15 @@ class SimpleStrategy extends Strategy {
       }
       if (
         this.max !== lastTicker &&
-        ((lastTicker - this.max) / this.max) * 100 >=
-          this.advanceSettings.earningCallback * -1
+        Math.abs(((lastTicker - this.max) / this.max) * 100) >=
+          Math.abs(this.advanceSettings.earningCallback)
       ) {
         delete this.min;
         return true;
-      } else {
-        return false;
       }
+      return false;
     }
   }
 }
 
-export default SimpleStrategy;
+export default SimpleDCA;

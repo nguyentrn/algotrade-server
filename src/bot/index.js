@@ -20,41 +20,49 @@ const getOHLCVs = async (limit = 1, condition = '') => {
   return Object.entries(bySymbol(ohlcvs.rows));
 };
 
+// init OHLCVS
 (async () => {
   await _MARKET_DATA.init();
-  const ohlcvs = await getOHLCVs(50);
+  const ohlcvs = await getOHLCVs(process.env.INIT_OHCLVS);
   _MARKET_DATA.initOHLCVs(ohlcvs);
 })();
 
+// update OHLCVS per minute
 schedule.scheduleJob('3 * * * * *', async () => {
-  const ohlcvs = await getOHLCVs(10);
+  const ohlcvs = await getOHLCVs(3);
   if (_MARKET_DATA.isLoaded) {
     _MARKET_DATA.updateOHLCVs(ohlcvs);
   }
 });
 
-setInterval(async () => {
-  if (_MARKET_DATA.isLoaded) {
-    await Promise.all(
-      Object.values(_USERS_DATA).map(async (user) => {
-        await Promise.all(
-          user.tradingPairs.map(async (tradingPair) => {
-            const order = tradingPair.run(_MARKET_DATA[tradingPair.symbol]);
-            if (order) {
-              await user.order(_MARKET_DATA[tradingPair.symbol], order);
-              if (order.side === 'SELL') {
-                const fee = tradingPair.getFee();
-                if (fee > 0) {
-                  await user.chargeFee(fee);
-                }
-              }
-            }
-            // if (tradingPair.profit !== done[done.length - 1]) {
-            //   done.push(tradingPair.profit);
-            // }
-          }),
-        );
-      }),
-    );
+const chargeFee = async (user, fee) => {
+  if (fee > 0) {
+    await user.chargeFee(fee);
   }
+};
+
+const putOrder = async (user, tradingPair) => {
+  const order = tradingPair.run(_MARKET_DATA[tradingPair.symbol]);
+  if (order) {
+    await user.order(order);
+    if (order.side === 'SELL') {
+      await chargeFee(user, tradingPair.getFee());
+    }
+  }
+};
+
+// run bot per second
+setInterval(async () => {
+  if (!_MARKET_DATA.isLoaded) {
+    return null;
+  }
+  await Promise.all(
+    Object.values(_USERS_DATA).map(async (user) => {
+      await Promise.all(
+        user.tradingPairs.map(async (tradingPair) => {
+          await putOrder(user, tradingPair);
+        }),
+      );
+    }),
+  );
 }, 1000);

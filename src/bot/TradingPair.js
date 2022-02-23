@@ -1,9 +1,9 @@
-import SimpleStrategy from './Strategy/SimpleStrategy';
+import SimpleDCA from './Strategy/SimpleDCA';
 
 const setStrategyByType = (tradingPair) => {
   switch (tradingPair.strategy) {
     case 'simple-dca': {
-      return new SimpleStrategy({
+      return new SimpleDCA({
         symbol: tradingPair.symbol,
         entryPoints: tradingPair.entryPoints,
         advanceSettings: tradingPair.advanceSettings,
@@ -56,7 +56,6 @@ class TradingPair {
     // if running, set profit, stop or dca
     this.strategy.setProfit(market);
     if (this.strategy.checkStop(market)) {
-      // console.log(this.strategy);
       return this.stop(market);
     }
     if (this.isDCA) {
@@ -75,15 +74,7 @@ class TradingPair {
   }
 
   stop(market) {
-    const sellObj = {
-      symbol: this.symbol,
-      side: 'SELL',
-      transactTime: Math.round(market.lastTime / 1000),
-      price: market.lastTicker,
-      quantity: this.orders
-        .map((order) => order.quantity)
-        .reduce((s, v) => s + v),
-    };
+    const sellObj = this.strategy.createSellOrderObject(market, this.orders);
     this.setProfit(
       sellObj.quantity * sellObj.price -
         this.orders

@@ -3,7 +3,7 @@ import { _USERS_DATA } from '../../bot/Users';
 import User from '../../bot/User';
 import db from '../../database/index';
 
-const getBalances = async (orginalBalances) => {
+const formatBalances = async (orginalBalances) => {
   const balances = { ...orginalBalances };
   const balanceKeys = Object.keys(balances);
 
@@ -17,34 +17,71 @@ const getBalances = async (orginalBalances) => {
   });
   return balances;
 };
+
+const getApiKey = async (email) => {
+  const apikey = await db('user_api_keys')
+    .select(['user', 'api_key', 'secret_key'])
+    .where('user', email)
+    .first();
+  return apikey;
+};
+
+const setUserPermission = async (email) => {
+  if (_USERS_DATA[email]) {
+    return _USERS_DATA[email].permissions;
+  }
+  const apikey = await getApiKey(email);
+  if (!apikey || !apikey.api_key) {
+    return false;
+  }
+  const user = new User([apikey]);
+  await user.checkAPIPermission();
+  return user;
+};
+
 @Injectable()
 export class AccountService {
-  async checkApiKey(email) {
-    if (_USERS_DATA[email]) {
-      return _USERS_DATA[email].isOkay;
+  async checkApiPermission(email) {
+    try {
+      const user = await setUserPermission(email);
+      return user.permissions;
+    } catch (err) {
+      return false;
     }
-    const apikey = await db('users')
-      .select(['email AS user', 'binance_api_key', 'binance_secret_key'])
-      .where('email', email)
-      .first();
-    const user = new User([apikey]);
-    await user.getAccountInfo();
-    return user.isOkay;
   }
 
   async getBalances(email) {
     if (_USERS_DATA[email]) {
-      const balances = await getBalances(_USERS_DATA[email].balances);
+      const balances = await formatBalances(_USERS_DATA[email].balances);
       return balances;
     }
-    const apikey = await db('users')
-      .select(['email AS user', 'binance_api_key', 'binance_secret_key'])
-      .where('email', email)
-      .first();
-    const user = new User([apikey]);
-    await user.getAccountInfo();
-    const balances = await getBalances(user.balances);
-    return balances;
+    const user = await setUserPermission(email);
+
+    if (user && user.permissions && user.permissions.enableReading) {
+      const balances = await user.exchange.getFundingWallet();
+      const formattedBalances = await formatBalances(balances);
+      return formattedBalances;
+    }
+  }
+
+  async updateToken(data) {
+    try {
+      const user = new User([data]);
+      await user.checkAPIPermission();
+      if (user?.permissions?.enableReading) {
+        data.updated_at = new Date();
+        await db('user_api_keys')
+          .insert(data)
+          .onConflict(['user', 'exchange'])
+          .merge();
+        return true;
+      } else {
+        return false;
+      }
+    } catch (err) {
+      // console.log(err);
+      return false;
+    }
   }
 
   async getOrders(user) {

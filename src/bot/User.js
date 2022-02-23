@@ -5,40 +5,47 @@ import TradingPair from './TradingPair';
 
 class User {
   constructor(tradingPairs) {
-    const { user, role, symbol, binance_api_key, binance_secret_key } =
-      tradingPairs[0];
+    const { user, role, symbol, api_key, secret_key } = tradingPairs[0];
     this.user = user;
     this.role = role;
     this.symbol = symbol;
     this.tradingPairs = [];
-    this.isOkay = false;
-    if (binance_api_key && binance_secret_key) {
-      this.exchange = new Binance({
-        apiKey: binance_api_key,
-        secret: binance_secret_key,
-      });
-      this.getAccountInfo().then();
-      if (this.symbol) {
-        tradingPairs.forEach((tradingPair) => this.addTradingPair(tradingPair));
-      }
+    this.permissions = {};
+    if (this.symbol) {
+      tradingPairs.forEach((tradingPair) => this.addTradingPair(tradingPair));
     }
+    if (api_key && secret_key) {
+      this.exchange = new Binance({
+        apiKey: api_key,
+        secret: secret_key,
+      });
+    }
+  }
+
+  async init() {
+    if (this.exchange) {
+      await this.getAccountInfo();
+    }
+  }
+
+  async checkAPIPermission() {
+    this.permissions = await this.exchange.getAPIKeyPermission();
   }
 
   async getAccountInfo() {
     try {
+      await this.checkAPIPermission();
       const accountInfo = await this.exchange.getAccountInfo();
       const listenKey = await this.exchange.createUserStreamListenKey();
       if (listenKey) {
-        this.isOkay = true;
         this.listenKey = listenKey;
+        this.makerCommission = accountInfo.makerCommission;
+        this.takerCommission = accountInfo.takerCommission;
+        this.balances = {};
+        accountInfo.balances.forEach((balance) => {
+          this.balances[balance.asset] = balance;
+        });
       }
-      this.canTrade = accountInfo.canTrade;
-      this.makerCommission = accountInfo.makerCommission;
-      this.takerCommission = accountInfo.takerCommission;
-      this.balances = {};
-      accountInfo.balances.forEach((balance) => {
-        this.balances[balance.asset] = balance;
-      });
     } catch (err) {
       console.log('user', err);
     }
@@ -62,6 +69,7 @@ class User {
   }
 
   async order(orderObj) {
+    console.log(orderObj);
     const order = {
       user: this.user,
       symbol: orderObj.symbol,
@@ -80,23 +88,6 @@ class User {
     delete orderObj.user;
     delete orderObj.transactTime;
     delete orderObj.position;
-
-    // const order = await this.exchange.postNewOrder(orderObj);
-    // console.log(order);
-    // const { symbol, price, origQty, side } = order;
-    // await db('orders')
-    //   .insert({
-    //     user: this.user,
-    //     symbol,
-    //     transactTime: Math.round(market.lastTime / 1000),
-    //     price,
-    //     origQty,
-    //     side,
-    //     position: orderObj.position,
-    //     updatedAt: new Date(),
-    //   })
-    //   .onConflict(['user', 'symbol', 'transactTime'])
-    //   .merge();
   }
 
   async chargeFee(fee) {

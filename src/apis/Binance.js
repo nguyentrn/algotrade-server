@@ -1,59 +1,35 @@
 import axios from 'axios';
 import crypto from 'crypto';
 
-const roundToPrecision = (num, precision) => {
-  return +(Math.round(num + `e+${precision}`) + `e-${precision}`);
-};
+// rt6Wfz7k1kRGmQtPkhN1VRQ1acYGg9mtPiNibuErdYzumepdAJdIkpZHJOq96Yi8
+// PzB7AWu0X7Qrn6WZ0XdZV8eEYwMMRqytZOU8cqJGRcifCMVMPGe4YReQYDOUvb0Y
 
 const apis = {
-  // exchangeInfo: {
-  //   method: 'get',
-  //   pathname: '/api/v3/exchangeInfo',
-  // },
-  // allOrders: {
-  //   method: 'get',
-  //   pathname: '/api/v3/account',
-  // },
-  // historicalTrades: {
-  //   method: 'get',
-  //   pathname: '/api/v3/historicalTrades',
-  // },
-
-  // // MARKET_DATA
-  // bookTicker: {
-  //   method: 'get',
-  //   pathname: '/api/v3/ticker/bookTicker',
-  //   securityType: 'NONE',
-  //   format: (data) =>
-  //     data
-  //       .map(({ symbol }) => ({
-  //         base: symbol.slice(0, 3),
-  //         quote: symbol.replace(symbol.slice(0, 3), ''),
-  //       }))
-  //       .filter(({ quote }) => quote === 'USDT'),
-  // },
-  // klines: {
-  //   method: 'get',
-  //   pathname: '/api/v3/klines',
-  //   securityType: 'MARKET_DATA',
-  //   format: (data) =>
-  //     data.map((ohlcv) => ({
-  //       time: new Date(ohlcv[0]),
-  //       open: ohlcv[1],
-  //       high: ohlcv[2],
-  //       low: ohlcv[3],
-  //       close: ohlcv[4],
-  //       volume: ohlcv[5],
-  //       trades: ohlcv[8],
-  //       taker_volume: ohlcv[9],
-  //     })),
-  // },
-
   // USER_DATA
+  tradeFee: {
+    method: 'get',
+    pathname: '/sapi/v1/asset/tradeFee',
+    securityType: 'USER_DATA',
+    weight: 1,
+  },
+  fundingWallet: {
+    method: 'post',
+    pathname: '/sapi/v1/asset/get-funding-asset',
+    securityType: 'USER_DATA',
+    weight: 1,
+  },
+  apiPermission: {
+    method: 'get',
+    pathname: '/sapi/v1/account/apiRestrictions',
+    securityType: 'USER_DATA',
+    weight: 1,
+  },
+
   account: {
     method: 'get',
     pathname: '/api/v3/account',
     securityType: 'USER_DATA',
+    weight: 10,
   },
 
   // TRADE
@@ -74,7 +50,12 @@ const apis = {
     pathname: '/api/v3/userDataStream',
     securityType: 'USER_STREAM',
     format: (data) => data.listenKey,
+    weight: 1,
   },
+};
+
+const roundToPrecision = (num, precision) => {
+  return +(Math.round(num + `e+${precision}`) + `e-${precision}`);
 };
 
 const getSignature = (apiSecret, queryString) => {
@@ -133,25 +114,41 @@ class Binance {
         url: `${this.hostname}${pathname}?${queryString}`,
         headers: getConfig(this.apiKey).headers,
       });
+      console.log({
+        api: api.pathname,
+        weight:
+          res.headers[
+            api.pathname.match(/^\/sapi/gi)
+              ? 'x-sapi-used-ip-weight-1m'
+              : 'x-mbx-used-weight-1m'
+          ] * 1,
+      });
       return res.data;
     } catch (err) {
       console.log(err.response.data);
     }
   }
 
-  // async getBookTickers() {
-  //   return apis.bookTicker.format(await this.fetchData(apis.bookTicker));
-  // }
-
-  async getOHLCVs(symbol = 'BTCUSDT', interval = '1m', limit = 100, startTime) {
-    return apis.klines.format(
-      await this.fetchData(apis.klines, {
-        symbol,
-        interval,
-        limit,
-        startTime,
-      }),
-    );
+  async getFundingWallet() {
+    const wallet = await this.fetchData(apis.fundingWallet, {
+      timestamp: Date.now(),
+      needBtcValuation: false,
+    });
+    const assets = {};
+    wallet.forEach(({ asset, free, locked }) => {
+      assets[asset] = { asset, free, locked };
+    });
+    return assets;
+  }
+  async getTradeFee() {
+    return await this.fetchData(apis.tradeFee, {
+      timestamp: Date.now(),
+    });
+  }
+  async getAPIKeyPermission() {
+    return await this.fetchData(apis.apiPermission, {
+      timestamp: Date.now(),
+    });
   }
 
   async getAccountInfo() {
@@ -171,7 +168,6 @@ class Binance {
       timestamp: Date.now(),
     });
   }
-
   async cancelOrders() {
     return await this.fetchData(apis.candleOrder, {
       symbol: 'BTCUSDT',
@@ -180,9 +176,10 @@ class Binance {
   }
 
   async createUserStreamListenKey() {
-    return apis.createListenKey.format(
-      await this.fetchData(apis.createListenKey),
-    );
+    const listenKey = await this.fetchData(apis.createListenKey);
+    if (listenKey) {
+      return apis.createListenKey.format(listenKey);
+    }
   }
 }
 

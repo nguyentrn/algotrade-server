@@ -23,8 +23,8 @@ export class BacktestController {
   @Post()
   @Bind(Request(), Body())
   async getBacktests(req, body) {
-    // const { email } = decodeToken(req);
-    const backtest = await this.backtestService.emulate(body);
+    const { email } = decodeToken(req);
+    const backtest = await this.backtestService.emulate(email, body);
     return { status: 200, data: backtest };
   }
 

@@ -16,9 +16,16 @@ const userTraingPairsQuery = db('users')
     'strategy',
     'advanceSettings',
     'role',
-    'binance_api_key',
-    'binance_secret_key',
+    'api_key',
+    'secret_key',
   ])
+  .join('user_api_keys', function () {
+    this.on('users.email', '=', 'user_api_keys.user').on(
+      'users.active_exchange',
+      '=',
+      'user_api_keys.exchange',
+    );
+  })
   .fullOuterJoin('user_strategies', 'users.email', 'user_strategies.user');
 
 class Users {
@@ -30,17 +37,21 @@ class Users {
     const tradingPairs = await userTraingPairsQuery
       .clearWhere()
       .where('isActive', true);
-
-    Object.values(byUser(tradingPairs)).forEach((tradingPair) => {
-      this[tradingPair[0].user] = new User(tradingPair);
-    });
+    await Promise.all(
+      Object.values(byUser(tradingPairs)).map(async (tradingPair) => {
+        this[tradingPair[0].user] = new User(tradingPair);
+        await this[tradingPair[0].user].init();
+      }),
+    );
   }
 
   async addOneUser(strategy) {
     const tradingPair = await userTraingPairsQuery
       .clearWhere()
       .where('email', strategy.user);
+
     this[strategy.user] = new User([{ ...tradingPair[0], ...strategy }]);
+    // await this[strategy.user].init();
   }
 
   removeOneUser(strategy) {
@@ -66,7 +77,14 @@ class Users {
   }
 
   getAllListenKeys() {
-    return Object.values(this).map((user) => user.listenKey);
+    console.log(
+      Object.values(this)
+        .map((user) => user.listenKey)
+        .filter((user) => user),
+    );
+    return Object.values(this)
+      .map((user) => user.listenKey)
+      .filter((user) => user);
   }
 }
 

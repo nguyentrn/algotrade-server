@@ -2,7 +2,6 @@ import { Injectable } from '@nestjs/common';
 import db from '../../database/index';
 
 import Market from '../../bot/Market/Market';
-import sleep from '../../utils/sleep';
 import { groupBy } from 'ramda';
 import TradingPair from '../../bot/TradingPair';
 import Pair from '../../bot/Market/Pair';
@@ -61,7 +60,6 @@ const emulate = async (strategy) => {
     const order = tradingPair.run(_MARKET_DATA[tradingPair.symbol]);
     if (order) {
       if (tradingPair.profit) {
-        console.log(tradingPair.profit);
         done.orders.push({ ...order, profit: tradingPair.profit });
       } else {
         done.orders.push(order);
@@ -79,10 +77,20 @@ const emulate = async (strategy) => {
   return done;
 };
 
+const getBacktestFee = (sessions) => {
+  return (sessions / 1440) * 0.1;
+};
+
 @Injectable()
 export class BacktestService {
-  async emulate(body) {
-    const data = await emulate(body);
-    return data;
+  async emulate(email, body) {
+    const user = await db('users').select('fuel').where('email', email).first();
+    const backtestFee = getBacktestFee(body.backtestLength);
+    if (user.fuel >= backtestFee) {
+      const data = await emulate(body);
+      await db('users').decrement({ fuel: backtestFee }).where('email', email);
+      return data;
+    }
+    return false;
   }
 }

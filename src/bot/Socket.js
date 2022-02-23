@@ -46,7 +46,6 @@ class Socket {
               data.B.forEach(({ a: asset, f: free, l: locked }) => {
                 user.balances[asset] = { asset, free, locked };
               });
-              console.log(user.balances);
             }
           }
         }
