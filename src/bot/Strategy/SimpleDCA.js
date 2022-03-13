@@ -7,7 +7,6 @@ class SimpleDCA extends Strategy {
 
   checkFirstEntry(tradingPair) {
     this.lastOrderPrice = tradingPair.lastTicker;
-
     // console.log(
     //   this.min,
     //   tradingPair.ohlcv['1m'].close,
@@ -22,7 +21,6 @@ class SimpleDCA extends Strategy {
     //   ((tradingPair.lastTicker - this.min) / this.min) * 100,
     //   this.advanceSettings.callbackForMarginCall,
     // );
-    // console.log(tradingPair.ohlcv.getCandlePattern());
     if (
       this.min <= tradingPair.ohlcv.min(this.advanceSettings.initPeriod) &&
       this.min !== this.lastOrderPrice &&

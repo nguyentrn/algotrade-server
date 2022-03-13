@@ -8,14 +8,23 @@ import pairs from '../apis/pairs';
 import db from '../database/index';
 
 const bySymbol = groupBy((ohlcv) => ohlcv.s);
+
 const getOHLCVs = async (limit = 1, condition = '') => {
   const query = `${pairs
-    .slice(0, 2)
+    // .slice(0, 20)
     .map(
       (pair) =>
         `(SELECT '${pair}' AS s,open,high,low,close,volume,time FROM ohlcvs.binance_${pair.toLowerCase()}_1m ${condition} ORDER BY time DESC LIMIT ${limit})`,
     )
     .join(' UNION ')} ORDER BY time`;
+  console.log(
+    `${pairs
+      .map(
+        (pair) =>
+          `(SELECT '${pair}' AS s,open,high,low,close,volume,time FROM ohlcvs.binance_${pair.toLowerCase()}_1m ${condition} ORDER BY time DESC LIMIT ${limit})`,
+      )
+      .join(' UNION ')} ORDER BY time`,
+  );
   const ohlcvs = await db.raw(query);
   return Object.entries(bySymbol(ohlcvs.rows));
 };
@@ -53,14 +62,16 @@ const putOrder = async (user, tradingPair) => {
 
 // run bot per second
 setInterval(async () => {
-  if (!_MARKET_DATA.isLoaded) {
+  if (!_MARKET_DATA.isLoaded && _MARKET_DATA.ohlcv) {
     return null;
   }
   await Promise.all(
     Object.values(_USERS_DATA).map(async (user) => {
       await Promise.all(
         user.tradingPairs.map(async (tradingPair) => {
-          await putOrder(user, tradingPair);
+          if (_MARKET_DATA[tradingPair.symbol].ohlcv) {
+            await putOrder(user, tradingPair);
+          }
         }),
       );
     }),
