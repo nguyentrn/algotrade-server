@@ -1,9 +1,12 @@
 import pairs from '../../apis/pairs';
 import db from '../../database';
 import Pair from './Pair';
-import global from '../../global';
 
 class Market {
+  constructor() {
+    this.isLoaded = false;
+  }
+
   async init() {
     const tradingPairs = await db('binance_trading_pairs')
       .select([
@@ -25,7 +28,7 @@ class Market {
         this[tradingPair.symbol] = new Pair(tradingPair);
       }
     });
-    global.isMarketLoaded = true;
+    this.isLoaded = true;
   }
 
   initOHLCVs(ohlcvs) {

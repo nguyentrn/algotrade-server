@@ -23,20 +23,6 @@ export class TradingPairService {
     return tradingPairsObj;
   }
 
-  async toggleActive(tradingPair) {
-    if (_USERS_DATA[tradingPair.user]) {
-      _USERS_DATA[tradingPair.user].toggleActiveTradingPair(tradingPair);
-    } else {
-      _USERS_DATA.addUser(tradingPair);
-    }
-    await db('user_trading_pairs')
-      .insert(tradingPair)
-      .onConflict(['user', 'symbol'])
-      .merge();
-    delete tradingPair.user;
-    return tradingPair;
-  }
-
   async getHistoryPrices(symbol) {
     if (_MARKET_DATA[symbol]) {
       const { lastTime } = _MARKET_DATA[symbol];

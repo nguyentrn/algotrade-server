@@ -6,7 +6,7 @@
   "scripts": {
     "format": "prettier --write \"**/*.js\"",
     "start": "babel-node index.js",
-    "dev": "nodemon",
+    "dev": "env=DEVELOPMENT nodemon",
     "testnet": "NETWORK=testnet nodemon"
   },
   "dependencies": {

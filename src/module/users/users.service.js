@@ -15,6 +15,7 @@ export class UsersService {
       fuel: 10,
       created_at: new Date(),
       updated_at: new Date(),
+      active_exchange: 'binance',
     };
     await db('users').insert(user);
     return user;

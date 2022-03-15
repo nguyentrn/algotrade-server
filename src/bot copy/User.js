@@ -4,50 +4,53 @@ import { _MARKET_DATA } from './Market/Market';
 import TradingPair from './TradingPair';
 
 class User {
-  constructor(user) {
-    const { email, role, api_key, secret_key } = user;
-    this.email = email;
+  constructor(tradingPairs) {
+    const { user, role, symbol, api_key, secret_key } = tradingPairs[0];
+    this.user = user;
     this.role = role;
+    this.symbol = symbol;
     this.tradingPairs = [];
-    this.balances = {};
-    this.exchange = new Binance({
-      apiKey: api_key,
-      secret: secret_key,
-    });
-  }
-
-  async init() {
-    await this.setAPIPermission();
-    if (this.permissions) {
-      const [listenKey, accountInfo, strategies] = await Promise.all([
-        this.exchange.createUserStreamListenKey(),
-        this.exchange.getAccountInfo(),
-        this.getStrategies(),
-      ]);
-      // console.log(strategies);
-      strategies.forEach((strategy) => this.addTradingPair(strategy));
-      this.listenKey = listenKey;
-      accountInfo.balances.forEach((balance) => {
-        if (balance.free * 1 || balance.locked * 1) {
-          this.balances[balance.asset] = {
-            asset: balance.asset,
-            free: balance.free * 1,
-            locked: balance.locked * 1,
-          };
-        }
+    this.permissions = {};
+    if (this.symbol) {
+      tradingPairs.forEach((tradingPair) => this.addTradingPair(tradingPair));
+    }
+    if (api_key && secret_key) {
+      this.exchange = new Binance({
+        apiKey: api_key,
+        secret: secret_key,
       });
     }
   }
 
-  async setAPIPermission() {
+  async init() {
+    if (this.exchange) {
+      await this.getAccountInfo();
+    }
+  }
+
+  async checkAPIPermission() {
     this.permissions = await this.exchange.getAPIKeyPermission();
   }
 
-  async getStrategies() {
-    return await db('user_strategies')
-      .select('*')
-      .where('user', this.email)
-      .where('isActive', true);
+  async getAccountInfo() {
+    try {
+      await this.checkAPIPermission();
+      const accountInfo = await this.exchange.getAccountInfo();
+      const listenKey = await this.exchange.createUserStreamListenKey();
+      if (listenKey) {
+        this.listenKey = listenKey;
+        this.makerCommission = accountInfo.makerCommission;
+        this.takerCommission = accountInfo.takerCommission;
+        this.balances = {};
+        accountInfo.balances.forEach((balance) => {
+          if (balance.free * 1 || balance.locked * 1) {
+            this.balances[balance.asset] = balance;
+          }
+        });
+      }
+    } catch (err) {
+      console.log('user', err);
+    }
   }
 
   addTradingPair(strategy) {
@@ -90,9 +93,7 @@ class User {
   }
 
   async chargeFee(fee) {
-    if (fee > 0) {
-      await db('users').where('email', this.user).decrement('fuel', fee);
-    }
+    await db('users').where('email', this.user).decrement('fuel', fee);
   }
 }
 

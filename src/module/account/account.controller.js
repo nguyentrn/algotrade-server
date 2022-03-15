@@ -21,27 +21,15 @@ export class AccountController {
   }
 
   @UseGuards(JwtAuthGuard)
-  @Get('checkapi')
+  @Get('me')
   @Bind(Request())
-  async checkApiPermission(req) {
+  async getAccount(req) {
     const email = decodeToken(req).email;
-    const apiKey = await this.accountService.checkApiPermission(email);
-    if (!apiKey || apiKey.code) {
+    const account = await this.accountService.getAccount(email);
+    if (!account) {
       return { status: 501, data: false };
     }
-    return { status: 200, data: apiKey };
-  }
-
-  @UseGuards(JwtAuthGuard)
-  @Get('balances')
-  @Bind(Request())
-  async getBalances(req) {
-    const email = decodeToken(req).email;
-    const balances = await this.accountService.getBalances(email);
-    if (!balances || balances.code) {
-      return { status: 501, data: false };
-    }
-    return { status: 200, data: balances };
+    return { status: 200, data: account };
   }
 
   @UseGuards(JwtAuthGuard)

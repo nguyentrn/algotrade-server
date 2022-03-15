@@ -30,7 +30,12 @@ export class StrategyService {
   }
 
   async updateOne(strategy) {
-    await _USERS_DATA.updateUserStrategy(strategy);
+    if (strategy.isActive) {
+      _USERS_DATA[strategy.user].addTradingPair(strategy);
+    } else {
+      _USERS_DATA[strategy.user].removeTradingPair(strategy);
+    }
+
     const result = await db('user_strategies')
       .insert(strategy)
       .onConflict(['user', 'symbol'])

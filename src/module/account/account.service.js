@@ -26,41 +26,18 @@ const getApiKey = async (email) => {
   return apikey;
 };
 
-const setUserPermission = async (email) => {
-  if (_USERS_DATA[email]) {
-    return _USERS_DATA[email].permissions;
-  }
-  const apikey = await getApiKey(email);
-  if (!apikey || !apikey.api_key) {
-    return false;
-  }
-  const user = new User([apikey]);
-  await user.checkAPIPermission();
-  return user;
-};
-
 @Injectable()
 export class AccountService {
-  async checkApiPermission(email) {
+  async getAccount(email) {
     try {
-      const user = await setUserPermission(email);
-      return user.permissions;
+      if (_USERS_DATA[email]) {
+        const balances = await formatBalances(_USERS_DATA[email].balances);
+        await _USERS_DATA[email].setAPIPermission();
+        const permissions = _USERS_DATA[email].permissions;
+        return { balances, permissions };
+      }
     } catch (err) {
       return false;
-    }
-  }
-
-  async getBalances(email) {
-    if (_USERS_DATA[email]) {
-      const balances = await formatBalances(_USERS_DATA[email].balances);
-      return balances;
-    }
-    const user = await setUserPermission(email);
-
-    if (user && user.permissions && user.permissions.enableReading) {
-      const balances = await user.exchange.getFundingWallet();
-      const formattedBalances = await formatBalances(balances);
-      return formattedBalances;
     }
   }
 
@@ -75,11 +52,8 @@ export class AccountService {
           .onConflict(['user', 'exchange'])
           .merge();
         return true;
-      } else {
-        return false;
       }
     } catch (err) {
-      // console.log(err);
       return false;
     }
   }

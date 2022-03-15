@@ -3,10 +3,9 @@ import { groupBy } from 'ramda';
 
 import { _USERS_DATA } from './Users';
 import { _MARKET_DATA } from './Market/Market';
-import './Socket';
+// import './Socket';
 import pairs from '../apis/pairs';
 import db from '../database/index';
-import global from '../global';
 
 const bySymbol = groupBy((ohlcv) => ohlcv.s);
 
@@ -31,31 +30,40 @@ const getOHLCVs = async (limit = 1, condition = '') => {
 // update OHLCVS per minute
 schedule.scheduleJob('3 * * * * *', async () => {
   const ohlcvs = await getOHLCVs(3);
-  if (global.isMarketLoaded) {
+  if (_MARKET_DATA.isLoaded) {
     _MARKET_DATA.updateOHLCVs(ohlcvs);
   }
 });
+
+const chargeFee = async (user, fee) => {
+  if (fee > 0) {
+    await user.chargeFee(fee);
+  }
+};
 
 const putOrder = async (user, tradingPair) => {
   const order = tradingPair.run(_MARKET_DATA[tradingPair.symbol]);
   if (order) {
     // await user.order(order);
-    if (order.side === 'SELL') {
-      await user.chargeFee(user, tradingPair.getFee());
-    }
+    // if (order.side === 'SELL') {
+    //   await chargeFee(user, tradingPair.getFee());
+    // }
   }
 };
 
-// // run bot per second
+// run bot per second
 setInterval(async () => {
-  if (!global.isMarketLoaded && _MARKET_DATA.ohlcv) {
+  if (!_MARKET_DATA.isLoaded && _MARKET_DATA.ohlcv) {
     return null;
   }
   await Promise.all(
     Object.values(_USERS_DATA).map(async (user) => {
+      console.log(user);
+
       await Promise.all(
         user.tradingPairs.map(async (tradingPair) => {
           if (_MARKET_DATA[tradingPair.symbol].ohlcv) {
+            console.log(user);
             await putOrder(user, tradingPair);
           }
         }),

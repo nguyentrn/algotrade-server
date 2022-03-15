@@ -19,7 +19,7 @@ export class AuthController {
   }
 
   @UseGuards(JwtAuthGuard)
-  @Get('check')
+  @Get('login')
   @Bind(Request())
   async checkUser(req) {
     const email = decodeToken(req).email;

@@ -38,18 +38,6 @@ export class TradingPairController {
     return { status: 200, data: { orders, prices } };
   }
 
-  @UseGuards(JwtAuthGuard)
-  @Post('active')
-  @Bind(Request(), Body())
-  async toggleActive(req, body) {
-    const { email } = decodeToken(req);
-    const data = await this.tradingPairService.toggleActive({
-      user: email,
-      ...body,
-    });
-    return { status: 200, data };
-  }
-
   @Get('orders')
   @Bind(Request(), Query())
   async getOrders(req, query) {
