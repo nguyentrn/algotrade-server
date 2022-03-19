@@ -125,7 +125,7 @@ class Binance {
       });
       return res.data;
     } catch (err) {
-      console.log(err.response.data);
+      console.log(api.pathname, err.response.data);
     }
   }
 

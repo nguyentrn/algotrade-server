@@ -38,7 +38,7 @@ export class AccountController {
   async updateToken(req, body) {
     const email = decodeToken(req).email;
     const result = await this.accountService.updateToken({
-      user: email,
+      email,
       ...body,
     });
     if (result) {

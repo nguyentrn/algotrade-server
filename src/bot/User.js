@@ -5,11 +5,12 @@ import TradingPair from './TradingPair';
 
 class User {
   constructor(user) {
-    const { email, role, api_key, secret_key } = user;
+    const { email, role, exchange, api_key, secret_key } = user;
     this.email = email;
     this.role = role;
     this.tradingPairs = [];
     this.balances = {};
+    this.active_exchange = exchange;
     this.exchange = new Binance({
       apiKey: api_key,
       secret: secret_key,
@@ -41,6 +42,16 @@ class User {
 
   async setAPIPermission() {
     this.permissions = await this.exchange.getAPIKeyPermission();
+    if (!this.permissions) {
+      await this.removeApiKey();
+    }
+  }
+
+  async removeApiKey() {
+    await db('user_api_keys')
+      .where('user', this.email)
+      .where('exchange', this.active_exchange)
+      .update({ api_key: null, secret_key: null });
   }
 
   async getStrategies() {

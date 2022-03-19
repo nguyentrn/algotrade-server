@@ -6,7 +6,7 @@ import global from '../global';
 
 const byUser = groupBy((tradingPairs) => tradingPairs.user);
 const usersQuery = db('users')
-  .select(['email', 'role', 'api_key', 'secret_key'])
+  .select(['email', 'role', 'api_key', 'secret_key', 'user_api_keys.exchange'])
   .join('user_api_keys', function () {
     this.on('users.email', '=', 'user_api_keys.user').on(
       'users.active_exchange',
@@ -17,9 +17,8 @@ const usersQuery = db('users')
 
 class Users {
   async initUsers() {
-    const users = await usersQuery
-      .clearWhere()
-      .where('email', 'nguyentran0113@gmail.com');
+    const users = await usersQuery.clearWhere();
+    // .where('email', 'nguyentran0113@gmail.com');
 
     await Promise.all(
       users.map(async (user) => {

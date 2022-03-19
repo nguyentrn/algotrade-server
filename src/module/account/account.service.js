@@ -36,17 +36,21 @@ export class AccountService {
         const permissions = _USERS_DATA[email].permissions;
         return { balances, permissions };
       }
+      console.log(_USERS_DATA);
     } catch (err) {
+      console.log('getAccount', err);
       return false;
     }
   }
 
   async updateToken(data) {
     try {
-      const user = new User([data]);
-      await user.checkAPIPermission();
-      if (user?.permissions?.enableReading) {
+      await _USERS_DATA.addOneUser(data);
+      console.log(_USERS_DATA[data.email]?.permissions?.enableReading);
+      if (_USERS_DATA[data.email]?.permissions?.enableReading) {
         data.updated_at = new Date();
+        data.user = data.email;
+        delete data.email;
         await db('user_api_keys')
           .insert(data)
           .onConflict(['user', 'exchange'])
@@ -54,6 +58,7 @@ export class AccountService {
         return true;
       }
     } catch (err) {
+      console.log('updateToken', err);
       return false;
     }
   }
