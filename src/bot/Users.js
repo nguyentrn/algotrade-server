@@ -1,10 +1,8 @@
-import { groupBy } from 'ramda';
-
 import db from '../database/index';
 import User from './User';
 import global from '../global';
+import socket from './Socket';
 
-const byUser = groupBy((tradingPairs) => tradingPairs.user);
 const usersQuery = db('users')
   .select(['email', 'role', 'api_key', 'secret_key', 'user_api_keys.exchange'])
   .join('user_api_keys', function () {
@@ -50,8 +48,10 @@ class Users {
 }
 
 export const _USERS_DATA = new Users();
+
 (async () => {
   await _USERS_DATA.initUsers();
+  socket.ws = socket.connectSocket();
 })();
 
 export default Users;

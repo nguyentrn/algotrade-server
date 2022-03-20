@@ -25,6 +25,7 @@ export class BacktestController {
   async getBacktests(req, body) {
     const { email } = decodeToken(req);
     const backtest = await this.backtestService.emulate(email, body);
+    // console.log(backtest);
     return { status: 200, data: backtest };
   }
 

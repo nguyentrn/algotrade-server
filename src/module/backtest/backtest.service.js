@@ -32,7 +32,7 @@ const emulate = async (strategy) => {
     symbol: strategy.symbol,
     ohlcvLength: strategy.backtestLength,
   });
-  const done = { time: [], ohlcvs: [], orders: [] };
+  const done = { time: [], ohlcvs: [], orders: [], profitByTime: [] };
   const historyData = await db
     .with(
       'prices',
@@ -61,6 +61,11 @@ const emulate = async (strategy) => {
     if (order) {
       if (tradingPair.profit) {
         done.orders.push({ ...order, profit: tradingPair.profit });
+        done.profitByTime.push({
+          time: order.transactTime,
+          profit: tradingPair.totalProfit,
+        });
+        tradingPair.reset();
       } else {
         done.orders.push(order);
       }

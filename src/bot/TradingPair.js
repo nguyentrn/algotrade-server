@@ -42,7 +42,7 @@ class TradingPair {
     this.orders = [];
     this.strategy.reset();
     this.isRunning = false;
-    this.profit = undefined;
+    this.profit = 0;
   }
 
   // ------------- ENTRY -------------
@@ -81,7 +81,6 @@ class TradingPair {
           .map((order) => order.price * order.quantity)
           .reduce((s, v) => s + v),
     );
-    this.reset();
     return sellObj;
   }
 

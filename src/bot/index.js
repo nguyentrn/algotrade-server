@@ -3,7 +3,7 @@ import { groupBy } from 'ramda';
 
 import { _USERS_DATA } from './Users';
 import { _MARKET_DATA } from './Market/Market';
-import './Socket';
+import socket from './Socket';
 import pairs from '../apis/pairs';
 import db from '../database/index';
 import global from '../global';
@@ -42,6 +42,7 @@ const putOrder = async (user, tradingPair) => {
     // await user.order(order);
     if (order.side === 'SELL') {
       await user.chargeFee(user, tradingPair.getFee());
+      tradingPair.reset();
     }
   }
 };

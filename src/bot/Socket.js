@@ -10,15 +10,11 @@ if (process.env.NETWORK === 'testnet') {
 }
 
 const DEFAULT_STREAMS = ['!miniTicker@arr'];
-// const DEFAULT_STREAMS = [];
 
 class Socket {
-  constructor() {
-    this.ws = this.connectSocket();
-  }
-
   connectSocket() {
     const ws = new WebSocket(endpoint);
+    console.log(_USERS_DATA.getAllListenKeys());
     ws.onopen = () => {
       ws.send(
         JSON.stringify({
@@ -39,12 +35,15 @@ class Socket {
               _MARKET_DATA.setTicker(pair);
             });
           } else {
+            console.log(data);
             if (data.e === 'outboundAccountPosition') {
               const user = Object.values(_USERS_DATA).find(
                 (user) => user.listenKey === stream,
               );
               data.B.forEach(({ a: asset, f: free, l: locked }) => {
-                user.balances[asset] = { asset, free, locked };
+                if (free * 1 || locked * 1) {
+                  user.balances[asset] = { asset, free, locked };
+                }
               });
             }
           }
