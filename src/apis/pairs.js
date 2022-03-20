@@ -23,6 +23,18 @@ const pairs = [
   'XLMUSDT',
   'FTMUSDT',
   'FTTUSDT',
+  'MANAUSDT',
+  'HBARUSDT',
+  'VETUSDT',
+  'AXSUSDT',
+  'THETAUSDT',
+  'FILUSDT',
+  'ETCUSDT',
+  'KLAYUSDT',
+  'SANDUSDT',
+  'XMRUSDT',
+  'EGLDUSDT',
+  'XTZUSDT',
 ];
 
 export default pairs;
