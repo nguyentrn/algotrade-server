@@ -7,6 +7,8 @@ import {
   bearishspinningtop,
   shootingstar,
   hammerpattern,
+  OBV,
+  RSI,
 } from 'technicalindicators';
 // var bullishspinningtop =require('technicalindicators').bullishspinningtop;
 
@@ -21,7 +23,7 @@ const getNextIntervalTime = (interval, lastTime) =>
   lastTime + interval * 60 * 1000;
 
 class OHLCV {
-  constructor(ohlcvs, ohlcvLength = 10) {
+  constructor(ohlcvs, ohlcvLength = process.env.INIT_OHCLVS * 1) {
     this.ohlcvLength = ohlcvLength;
     INTERVALS.forEach((interval) => {
       this[interval] = {
@@ -39,13 +41,15 @@ class OHLCV {
         this['1m'][key].push(val);
       });
     });
+    console.log(this.ohlcvLength);
   }
 
-  getLastTime(interval) {
-    return this[interval].time[this[interval].time.length - 1];
+  getLastTime(timeframe) {
+    return this[timeframe].time[this[timeframe].time.length - 1];
   }
 
   update(data) {
+    console.log(data);
     const lastOHLCVTime = this.getLastTime('1m');
     data
       .filter((ohlcv) => ohlcv.time > lastOHLCVTime)
@@ -60,8 +64,8 @@ class OHLCV {
       });
   }
 
-  getOHLCVsFrom(interval = '1m', from = 0) {
-    const indexFrom = this[interval]?.findIndex((c) => c >= from);
+  getOHLCVsFrom(timeframe = '1m', from = 0) {
+    const indexFrom = this[timeframe]?.findIndex((c) => c >= from);
     if (indexFrom === -1) {
       return null;
     }
@@ -69,18 +73,22 @@ class OHLCV {
     return closesFrom;
   }
 
-  getClosePriceFrom(amount) {
-    return this['1m'].close.slice(amount * -1);
+  getClosePriceFrom(timeframe, amount) {
+    return this[timeframe].close.slice(amount * -1);
   }
 
-  getOHLCPriceFrom(amount) {
-    return {
-      open: this['1m'].open.slice(amount * -1),
-      high: this['1m'].high.slice(amount * -1),
-      low: this['1m'].low.slice(amount * -1),
-      close: getClosePriceFrom(amount),
-    };
+  getVolumePriceFrom(timeframe, amount) {
+    return this[timeframe].volume.slice(amount * -1);
   }
+
+  // getOHLCPriceFrom(amount) {
+  //   return {
+  //     open: this['1m'].open.slice(amount * -1),
+  //     high: this['1m'].high.slice(amount * -1),
+  //     low: this['1m'].low.slice(amount * -1),
+  //     close: getClosePriceFrom('1m', amount),
+  //   };
+  // }
 
   getFrom(amount) {
     return {
@@ -93,61 +101,75 @@ class OHLCV {
     };
   }
 
-  min(period = 50) {
-    return min(this.getClosePriceFrom(period));
+  min(amount = 50) {
+    return min(this.getClosePriceFrom('1m', amount));
   }
 
-  max(period = 50) {
-    return max(this.getClosePriceFrom(period));
+  max(amount = 50) {
+    return max(this.getClosePriceFrom('1m', amount));
   }
 
-  morningdojistar() {
-    return morningdojistar(this.getOHLCPriceFrom(3));
-  }
-  eveningdojistar() {
-    return eveningdojistar(this.getOHLCPriceFrom(3));
-  }
-  bullishspinningtop() {
-    return bullishspinningtop(this.getOHLCPriceFrom(1));
-  }
-  bearishspinningtop() {
-    return bearishspinningtop(this.getOHLCPriceFrom(1));
-  }
-  doji() {
-    return doji(this.getOHLCPriceFrom(1));
-  }
-  shootingstar() {
-    return shootingstar(this.getOHLCPriceFrom(5));
-  }
-  hammerpattern() {
-    return hammerpattern(this.getOHLCPriceFrom(5));
-  }
+  // calculateOBV(amount) {
+  //   return OBV.calculate({
+  //     close: this.getClosePriceFrom('1m', amount),
+  //     volume: this.getVolumePriceFrom('1m', amount),
+  //   });
+  // }
 
-  getCandlePattern() {
-    const res = [];
-    if (this.hammerpattern()) {
-      res.push('hammerpattern');
-    }
-    if (this.shootingstar()) {
-      res.push('shootingstar');
-    }
-    // if (this.morningdojistar()) {
-    //   res.push('morningdojistar');
-    // }
-    // if (this.eveningdojistar()) {
-    //   res.push('eveningdojistar');
-    // }
-    // if (this.bullishspinningtop()) {
-    //   res.push('bullishspinningtop');
-    // }
-    // if (this.bearishspinningtop()) {
-    //   res.push('bearishspinningtop');
-    // }
-    // if (this.doji()) {
-    //   res.push('doji');
-    // }
-    return res;
-  }
+  // calculateRSI(timeframe = '1m', period, amount) {
+  //   return RSI.calculate({
+  //     values: this.getClosePriceFrom(timeframe, amount),
+  //     period,
+  //   });
+  // }
+
+  // morningdojistar() {
+  //   return morningdojistar(this.getOHLCPriceFrom(3));
+  // }
+  // eveningdojistar() {
+  //   return eveningdojistar(this.getOHLCPriceFrom(3));
+  // }
+  // bullishspinningtop() {
+  //   return bullishspinningtop(this.getOHLCPriceFrom(1));
+  // }
+  // bearishspinningtop() {
+  //   return bearishspinningtop(this.getOHLCPriceFrom(1));
+  // }
+  // doji() {
+  //   return doji(this.getOHLCPriceFrom(1));
+  // }
+  // shootingstar() {
+  //   return shootingstar(this.getOHLCPriceFrom(5));
+  // }
+  // hammerpattern() {
+  //   return hammerpattern(this.getOHLCPriceFrom(5));
+  // }
+
+  // getCandlePattern() {
+  //   const res = [];
+  //   if (this.hammerpattern()) {
+  //     res.push('hammerpattern');
+  //   }
+  //   if (this.shootingstar()) {
+  //     res.push('shootingstar');
+  //   }
+  //   // if (this.morningdojistar()) {
+  //   //   res.push('morningdojistar');
+  //   // }
+  //   // if (this.eveningdojistar()) {
+  //   //   res.push('eveningdojistar');
+  //   // }
+  //   // if (this.bullishspinningtop()) {
+  //   //   res.push('bullishspinningtop');
+  //   // }
+  //   // if (this.bearishspinningtop()) {
+  //   //   res.push('bearishspinningtop');
+  //   // }
+  //   // if (this.doji()) {
+  //   //   res.push('doji');
+  //   // }
+  //   return res;
+  // }
 }
 
 export default OHLCV;

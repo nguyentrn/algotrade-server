@@ -7,6 +7,7 @@ import { TradingPairModule } from './tradingPair/tradingPair.module';
 import { AccountModule } from './account/account.module';
 import { StrategyModule } from './strategies/strategy.module';
 import { BacktestModule } from './backtest/backtest.module';
+import { CoinstatsModule } from './coinstats/coinstats.module';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { BacktestModule } from './backtest/backtest.module';
     BacktestModule,
     AccountModule,
     StrategyModule,
+    CoinstatsModule,
   ],
 })
 export class AppModule {}

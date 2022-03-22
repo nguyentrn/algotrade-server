@@ -3,7 +3,6 @@ import { groupBy } from 'ramda';
 
 import { _USERS_DATA } from './Users';
 import { _MARKET_DATA } from './Market/Market';
-import socket from './Socket';
 import pairs from '../apis/pairs';
 import db from '../database/index';
 import global from '../global';
@@ -18,19 +17,23 @@ const getOHLCVs = async (limit = 1, condition = '') => {
     )
     .join(' UNION ')} ORDER BY time`;
   const ohlcvs = await db.raw(query);
+  // console.log(
+  //   bySymbol(ohlcvs.rows).BTCUSDT[bySymbol(ohlcvs.rows).BTCUSDT.length - 2],
+  // );
+
   return Object.entries(bySymbol(ohlcvs.rows));
 };
 
 // init OHLCVS
 (async () => {
   await _MARKET_DATA.init();
-  const ohlcvs = await getOHLCVs(process.env.INIT_OHCLVS);
+  const ohlcvs = await getOHLCVs(process.env.INIT_OHCLVS * 1);
   _MARKET_DATA.initOHLCVs(ohlcvs);
 })();
 
 // update OHLCVS per minute
 schedule.scheduleJob('3 * * * * *', async () => {
-  const ohlcvs = await getOHLCVs(3);
+  const ohlcvs = await getOHLCVs(5);
   if (global.isMarketLoaded) {
     _MARKET_DATA.updateOHLCVs(ohlcvs);
   }
