@@ -17,10 +17,6 @@ const getOHLCVs = async (limit = 1, condition = '') => {
     )
     .join(' UNION ')} ORDER BY time`;
   const ohlcvs = await db.raw(query);
-  // console.log(
-  //   bySymbol(ohlcvs.rows).BTCUSDT[bySymbol(ohlcvs.rows).BTCUSDT.length - 2],
-  // );
-
   return Object.entries(bySymbol(ohlcvs.rows));
 };
 

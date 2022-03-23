@@ -49,7 +49,6 @@ class OHLCV {
   }
 
   update(data) {
-    console.log(data);
     const lastOHLCVTime = this.getLastTime('1m');
     data
       .filter((ohlcv) => ohlcv.time > lastOHLCVTime)
